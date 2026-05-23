@@ -49,17 +49,35 @@ SERVICE_PORTS = {
     "admin": 8006,
 }
 
+def _service_url(env_key: str, default: str) -> str:
+    """Normalise a service URL from an env var.
+
+    Render injects the *host* (e.g. ``iotinel-auth.onrender.com``) via the
+    ``fromService … property: host`` blueprint directive.  We need a full URL,
+    so we prepend ``https://`` when the value has no scheme.
+    """
+    raw = os.getenv(env_key, "").strip()
+    if not raw:
+        return default
+    if raw.startswith("http://") or raw.startswith("https://"):
+        return raw
+    return f"https://{raw}"
+
+
 SERVICE_URLS = {
-    "auth": os.getenv("AUTH_SERVICE_URL", "http://auth_service:8001"),
-    "detection": os.getenv("DETECTION_SERVICE_URL", "http://detection_service:8002"),
-    "training": os.getenv("TRAINING_SERVICE_URL", "http://ml_training_service:8003"),
-    "monitoring": os.getenv("MONITORING_SERVICE_URL", "http://monitoring_service:8004"),
-    "dashboard": os.getenv("DASHBOARD_SERVICE_URL", "http://dashboard_service:8005"),
-    "admin": os.getenv("ADMIN_SERVICE_URL", "http://admin_service:8006"),
-    "analyst_ui": os.getenv("ANALYST_UI_URL", "http://analyst-ui:80"),
-    "scientist_ui": os.getenv("SCIENTIST_UI_URL", "http://scientist-ui:80"),
-    "admin_ui": os.getenv("ADMIN_UI_URL", "http://admin-ui:80"),
+    "auth": _service_url("AUTH_SERVICE_URL", "http://auth_service:8001"),
+    "detection": _service_url("DETECTION_SERVICE_URL", "http://detection_service:8002"),
+    "training": _service_url("TRAINING_SERVICE_URL", "http://ml_training_service:8003"),
+    "monitoring": _service_url("MONITORING_SERVICE_URL", "http://monitoring_service:8004"),
+    "dashboard": _service_url("DASHBOARD_SERVICE_URL", "http://dashboard_service:8005"),
+    "admin": _service_url("ADMIN_SERVICE_URL", "http://admin_service:8006"),
+    "analyst_ui": _service_url("ANALYST_UI_URL", "http://analyst-ui:80"),
+    "scientist_ui": _service_url("SCIENTIST_UI_URL", "http://scientist-ui:80"),
+    "admin_ui": _service_url("ADMIN_UI_URL", "http://admin-ui:80"),
 }
+
+_extra_origins = os.getenv("ALLOWED_ORIGINS", "")
+_extra_list = [o.strip() for o in _extra_origins.split(",") if o.strip()]
 
 ALLOWED_ORIGINS = [
     "http://localhost:8010",
@@ -70,4 +88,5 @@ ALLOWED_ORIGINS = [
     "http://127.0.0.1:3001",
     "http://127.0.0.1:3002",
     "http://127.0.0.1:3003",
+    *_extra_list,
 ]

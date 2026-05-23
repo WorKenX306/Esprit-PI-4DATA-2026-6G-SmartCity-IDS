@@ -1,0 +1,404 @@
+# =============================================================================
+# Render Blueprint — IOTinel SmartCity IDS
+# Deploy with: https://dashboard.render.com/blueprints
+# Root directory for all services: app_web/
+# =============================================================================
+
+databases:
+  - name: iotinel-db
+    databaseName: iotinel
+    user: iotinel
+    plan: free
+
+services:
+
+  # ---------------------------------------------------------------------------
+  # BACKEND — Auth Service
+  # ---------------------------------------------------------------------------
+  - type: web
+    name: iotinel-auth
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile.auth
+    dockerContext: .
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: iotinel-db
+          property: connectionString
+      - key: INTERNAL_SERVICE_TOKEN
+        generateValue: true
+      - key: ELASTICSEARCH_URL
+        value: ""
+      - key: REDIS_URL
+        value: ""
+      - key: MLFLOW_TRACKING_URI
+        value: "/tmp/mlruns"
+      - key: MLOPS_API_BASE
+        value: "http://localhost:8088"
+      - key: ALLOWED_ORIGINS
+        value: ""   # Fill in after deploy: comma-separated Render frontend URLs
+
+  # ---------------------------------------------------------------------------
+  # BACKEND — Detection Service
+  # ---------------------------------------------------------------------------
+  - type: web
+    name: iotinel-detection
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile.detection
+    dockerContext: .
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: JWT_SECRET
+        fromService:
+          name: iotinel-auth
+          type: web
+          envVarKey: JWT_SECRET
+      - key: DATABASE_URL
+        fromDatabase:
+          name: iotinel-db
+          property: connectionString
+      - key: INTERNAL_SERVICE_TOKEN
+        fromService:
+          name: iotinel-auth
+          type: web
+          envVarKey: INTERNAL_SERVICE_TOKEN
+      - key: AUTH_SERVICE_URL
+        fromService:
+          name: iotinel-auth
+          type: web
+          property: host
+      - key: ELASTICSEARCH_URL
+        value: ""
+      - key: REDIS_URL
+        value: ""
+      - key: MLFLOW_TRACKING_URI
+        value: "/tmp/mlruns"
+      - key: MLOPS_API_BASE
+        value: "http://localhost:8088"
+      - key: COHERE_API_KEY
+        value: ""   # Optional: add your Cohere key for AI explanations
+      - key: ALLOWED_ORIGINS
+        value: ""
+
+  # ---------------------------------------------------------------------------
+  # BACKEND — ML Training Service
+  # ---------------------------------------------------------------------------
+  - type: web
+    name: iotinel-training
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile.training
+    dockerContext: .
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: JWT_SECRET
+        fromService:
+          name: iotinel-auth
+          type: web
+          envVarKey: JWT_SECRET
+      - key: DATABASE_URL
+        fromDatabase:
+          name: iotinel-db
+          property: connectionString
+      - key: INTERNAL_SERVICE_TOKEN
+        fromService:
+          name: iotinel-auth
+          type: web
+          envVarKey: INTERNAL_SERVICE_TOKEN
+      - key: AUTH_SERVICE_URL
+        fromService:
+          name: iotinel-auth
+          type: web
+          property: host
+      - key: ELASTICSEARCH_URL
+        value: ""
+      - key: REDIS_URL
+        value: ""
+      - key: MLFLOW_TRACKING_URI
+        value: "/tmp/mlruns"
+      - key: MLOPS_API_BASE
+        value: "http://localhost:8088"
+      - key: ALLOWED_ORIGINS
+        value: ""
+
+  # ---------------------------------------------------------------------------
+  # BACKEND — Monitoring Service
+  # ---------------------------------------------------------------------------
+  - type: web
+    name: iotinel-monitoring
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile.monitoring
+    dockerContext: .
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: JWT_SECRET
+        fromService:
+          name: iotinel-auth
+          type: web
+          envVarKey: JWT_SECRET
+      - key: DATABASE_URL
+        fromDatabase:
+          name: iotinel-db
+          property: connectionString
+      - key: INTERNAL_SERVICE_TOKEN
+        fromService:
+          name: iotinel-auth
+          type: web
+          envVarKey: INTERNAL_SERVICE_TOKEN
+      - key: AUTH_SERVICE_URL
+        fromService:
+          name: iotinel-auth
+          type: web
+          property: host
+      - key: ELASTICSEARCH_URL
+        value: ""
+      - key: REDIS_URL
+        value: ""
+      - key: MLFLOW_TRACKING_URI
+        value: "/tmp/mlruns"
+      - key: MLOPS_API_BASE
+        value: "http://localhost:8088"
+      - key: ALLOWED_ORIGINS
+        value: ""
+
+  # ---------------------------------------------------------------------------
+  # BACKEND — Dashboard Service
+  # ---------------------------------------------------------------------------
+  - type: web
+    name: iotinel-dashboard
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile.dashboard
+    dockerContext: .
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: JWT_SECRET
+        fromService:
+          name: iotinel-auth
+          type: web
+          envVarKey: JWT_SECRET
+      - key: DATABASE_URL
+        fromDatabase:
+          name: iotinel-db
+          property: connectionString
+      - key: INTERNAL_SERVICE_TOKEN
+        fromService:
+          name: iotinel-auth
+          type: web
+          envVarKey: INTERNAL_SERVICE_TOKEN
+      - key: AUTH_SERVICE_URL
+        fromService:
+          name: iotinel-auth
+          type: web
+          property: host
+      - key: ELASTICSEARCH_URL
+        value: ""
+      - key: REDIS_URL
+        value: ""
+      - key: MLFLOW_TRACKING_URI
+        value: "/tmp/mlruns"
+      - key: MLOPS_API_BASE
+        value: "http://localhost:8088"
+      - key: ALLOWED_ORIGINS
+        value: ""
+
+  # ---------------------------------------------------------------------------
+  # BACKEND — Admin Service
+  # ---------------------------------------------------------------------------
+  - type: web
+    name: iotinel-admin
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile.admin
+    dockerContext: .
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: JWT_SECRET
+        fromService:
+          name: iotinel-auth
+          type: web
+          envVarKey: JWT_SECRET
+      - key: DATABASE_URL
+        fromDatabase:
+          name: iotinel-db
+          property: connectionString
+      - key: INTERNAL_SERVICE_TOKEN
+        fromService:
+          name: iotinel-auth
+          type: web
+          envVarKey: INTERNAL_SERVICE_TOKEN
+      - key: AUTH_SERVICE_URL
+        fromService:
+          name: iotinel-auth
+          type: web
+          property: host
+      - key: DETECTION_SERVICE_URL
+        fromService:
+          name: iotinel-detection
+          type: web
+          property: host
+      - key: TRAINING_SERVICE_URL
+        fromService:
+          name: iotinel-training
+          type: web
+          property: host
+      - key: MONITORING_SERVICE_URL
+        fromService:
+          name: iotinel-monitoring
+          type: web
+          property: host
+      - key: DASHBOARD_SERVICE_URL
+        fromService:
+          name: iotinel-dashboard
+          type: web
+          property: host
+      - key: ELASTICSEARCH_URL
+        value: ""
+      - key: REDIS_URL
+        value: ""
+      - key: MLFLOW_TRACKING_URI
+        value: "/tmp/mlruns"
+      - key: MLOPS_API_BASE
+        value: "http://localhost:8088"
+      - key: ALLOWED_ORIGINS
+        value: ""
+
+  # ---------------------------------------------------------------------------
+  # BACKEND — Gateway (main entry point, exposes port 8000 → Render HTTPS)
+  # ---------------------------------------------------------------------------
+  - type: web
+    name: iotinel-gateway
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile.gateway
+    dockerContext: .
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: JWT_SECRET
+        fromService:
+          name: iotinel-auth
+          type: web
+          envVarKey: JWT_SECRET
+      - key: INTERNAL_SERVICE_TOKEN
+        fromService:
+          name: iotinel-auth
+          type: web
+          envVarKey: INTERNAL_SERVICE_TOKEN
+      - key: AUTH_SERVICE_URL
+        fromService:
+          name: iotinel-auth
+          type: web
+          property: host
+      - key: DETECTION_SERVICE_URL
+        fromService:
+          name: iotinel-detection
+          type: web
+          property: host
+      - key: TRAINING_SERVICE_URL
+        fromService:
+          name: iotinel-training
+          type: web
+          property: host
+      - key: MONITORING_SERVICE_URL
+        fromService:
+          name: iotinel-monitoring
+          type: web
+          property: host
+      - key: DASHBOARD_SERVICE_URL
+        fromService:
+          name: iotinel-dashboard
+          type: web
+          property: host
+      - key: ADMIN_SERVICE_URL
+        fromService:
+          name: iotinel-admin
+          type: web
+          property: host
+      - key: ANALYST_UI_URL
+        value: ""   # Fill in after static site deploy
+      - key: SCIENTIST_UI_URL
+        value: ""   # Fill in after static site deploy
+      - key: ADMIN_UI_URL
+        value: ""   # Fill in after static site deploy
+      - key: ELASTICSEARCH_URL
+        value: ""
+      - key: REDIS_URL
+        value: ""
+      - key: MLFLOW_TRACKING_URI
+        value: "/tmp/mlruns"
+      - key: MLOPS_API_BASE
+        value: "http://localhost:8088"
+      - key: ALLOWED_ORIGINS
+        value: ""   # Fill in: comma-separated frontend URLs after deploy
+
+  # ---------------------------------------------------------------------------
+  # FRONTEND — Analyst UI (Static Site)
+  # ---------------------------------------------------------------------------
+  - type: web
+    name: iotinel-analyst-ui
+    runtime: static
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    rootDir: frontend/analyst
+    pullRequestPreviewsEnabled: false
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: no-cache
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        value: ""   # Fill in: https://iotinel-gateway.onrender.com
+
+  # ---------------------------------------------------------------------------
+  # FRONTEND — Scientist UI (Static Site)
+  # ---------------------------------------------------------------------------
+  - type: web
+    name: iotinel-scientist-ui
+    runtime: static
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    rootDir: frontend/scientist
+    pullRequestPreviewsEnabled: false
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: no-cache
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        value: ""   # Fill in: https://iotinel-gateway.onrender.com
+
+  # ---------------------------------------------------------------------------
+  # FRONTEND — Admin UI (Static Site)
+  # ---------------------------------------------------------------------------
+  - type: web
+    name: iotinel-admin-ui
+    runtime: static
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    rootDir: frontend/admin
+    pullRequestPreviewsEnabled: false
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: no-cache
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        value: ""   # Fill in: https://iotinel-gateway.onrender.com
