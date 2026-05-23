@@ -1,9 +1,3 @@
-# =============================================================================
-# Render Blueprint — IOTinel SmartCity IDS
-# Deploy with: https://dashboard.render.com/blueprints
-# Root directory for all services: app_web/
-# =============================================================================
-
 databases:
   - name: iotinel-db
     databaseName: iotinel
@@ -11,15 +5,11 @@ databases:
     plan: free
 
 services:
-
-  # ---------------------------------------------------------------------------
-  # BACKEND — Auth Service
-  # ---------------------------------------------------------------------------
   - type: web
     name: iotinel-auth
     runtime: docker
-    dockerfilePath: ./backend/Dockerfile.auth
-    dockerContext: .
+    dockerfilePath: ./app_web/backend/Dockerfile.auth
+    dockerContext: ./app_web
     plan: free
     healthCheckPath: /health
     envVars:
@@ -40,16 +30,13 @@ services:
       - key: MLOPS_API_BASE
         value: "http://localhost:8088"
       - key: ALLOWED_ORIGINS
-        value: ""   # Fill in after deploy: comma-separated Render frontend URLs
+        value: ""
 
-  # ---------------------------------------------------------------------------
-  # BACKEND — Detection Service
-  # ---------------------------------------------------------------------------
   - type: web
     name: iotinel-detection
     runtime: docker
-    dockerfilePath: ./backend/Dockerfile.detection
-    dockerContext: .
+    dockerfilePath: ./app_web/backend/Dockerfile.detection
+    dockerContext: ./app_web
     plan: free
     healthCheckPath: /health
     envVars:
@@ -81,18 +68,15 @@ services:
       - key: MLOPS_API_BASE
         value: "http://localhost:8088"
       - key: COHERE_API_KEY
-        value: ""   # Optional: add your Cohere key for AI explanations
+        value: ""
       - key: ALLOWED_ORIGINS
         value: ""
 
-  # ---------------------------------------------------------------------------
-  # BACKEND — ML Training Service
-  # ---------------------------------------------------------------------------
   - type: web
     name: iotinel-training
     runtime: docker
-    dockerfilePath: ./backend/Dockerfile.training
-    dockerContext: .
+    dockerfilePath: ./app_web/backend/Dockerfile.training
+    dockerContext: ./app_web
     plan: free
     healthCheckPath: /health
     envVars:
@@ -126,14 +110,11 @@ services:
       - key: ALLOWED_ORIGINS
         value: ""
 
-  # ---------------------------------------------------------------------------
-  # BACKEND — Monitoring Service
-  # ---------------------------------------------------------------------------
   - type: web
     name: iotinel-monitoring
     runtime: docker
-    dockerfilePath: ./backend/Dockerfile.monitoring
-    dockerContext: .
+    dockerfilePath: ./app_web/backend/Dockerfile.monitoring
+    dockerContext: ./app_web
     plan: free
     healthCheckPath: /health
     envVars:
@@ -167,14 +148,11 @@ services:
       - key: ALLOWED_ORIGINS
         value: ""
 
-  # ---------------------------------------------------------------------------
-  # BACKEND — Dashboard Service
-  # ---------------------------------------------------------------------------
   - type: web
     name: iotinel-dashboard
     runtime: docker
-    dockerfilePath: ./backend/Dockerfile.dashboard
-    dockerContext: .
+    dockerfilePath: ./app_web/backend/Dockerfile.dashboard
+    dockerContext: ./app_web
     plan: free
     healthCheckPath: /health
     envVars:
@@ -208,14 +186,11 @@ services:
       - key: ALLOWED_ORIGINS
         value: ""
 
-  # ---------------------------------------------------------------------------
-  # BACKEND — Admin Service
-  # ---------------------------------------------------------------------------
   - type: web
     name: iotinel-admin
     runtime: docker
-    dockerfilePath: ./backend/Dockerfile.admin
-    dockerContext: .
+    dockerfilePath: ./app_web/backend/Dockerfile.admin
+    dockerContext: ./app_web
     plan: free
     healthCheckPath: /health
     envVars:
@@ -269,14 +244,11 @@ services:
       - key: ALLOWED_ORIGINS
         value: ""
 
-  # ---------------------------------------------------------------------------
-  # BACKEND — Gateway (main entry point, exposes port 8000 → Render HTTPS)
-  # ---------------------------------------------------------------------------
   - type: web
     name: iotinel-gateway
     runtime: docker
-    dockerfilePath: ./backend/Dockerfile.gateway
-    dockerContext: .
+    dockerfilePath: ./app_web/backend/Dockerfile.gateway
+    dockerContext: ./app_web
     plan: free
     healthCheckPath: /health
     envVars:
@@ -321,11 +293,11 @@ services:
           type: web
           property: host
       - key: ANALYST_UI_URL
-        value: ""   # Fill in after static site deploy
+        value: ""
       - key: SCIENTIST_UI_URL
-        value: ""   # Fill in after static site deploy
+        value: ""
       - key: ADMIN_UI_URL
-        value: ""   # Fill in after static site deploy
+        value: ""
       - key: ELASTICSEARCH_URL
         value: ""
       - key: REDIS_URL
@@ -335,70 +307,49 @@ services:
       - key: MLOPS_API_BASE
         value: "http://localhost:8088"
       - key: ALLOWED_ORIGINS
-        value: ""   # Fill in: comma-separated frontend URLs after deploy
+        value: ""
 
-  # ---------------------------------------------------------------------------
-  # FRONTEND — Analyst UI (Static Site)
-  # ---------------------------------------------------------------------------
   - type: web
     name: iotinel-analyst-ui
     runtime: static
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
-    rootDir: frontend/analyst
+    rootDir: app_web/frontend/analyst
     pullRequestPreviewsEnabled: false
-    headers:
-      - path: /*
-        name: Cache-Control
-        value: no-cache
     routes:
       - type: rewrite
         source: /*
         destination: /index.html
     envVars:
       - key: VITE_API_URL
-        value: ""   # Fill in: https://iotinel-gateway.onrender.com
+        value: ""
 
-  # ---------------------------------------------------------------------------
-  # FRONTEND — Scientist UI (Static Site)
-  # ---------------------------------------------------------------------------
   - type: web
     name: iotinel-scientist-ui
     runtime: static
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
-    rootDir: frontend/scientist
+    rootDir: app_web/frontend/scientist
     pullRequestPreviewsEnabled: false
-    headers:
-      - path: /*
-        name: Cache-Control
-        value: no-cache
     routes:
       - type: rewrite
         source: /*
         destination: /index.html
     envVars:
       - key: VITE_API_URL
-        value: ""   # Fill in: https://iotinel-gateway.onrender.com
+        value: ""
 
-  # ---------------------------------------------------------------------------
-  # FRONTEND — Admin UI (Static Site)
-  # ---------------------------------------------------------------------------
   - type: web
     name: iotinel-admin-ui
     runtime: static
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
-    rootDir: frontend/admin
+    rootDir: app_web/frontend/admin
     pullRequestPreviewsEnabled: false
-    headers:
-      - path: /*
-        name: Cache-Control
-        value: no-cache
     routes:
       - type: rewrite
         source: /*
         destination: /index.html
     envVars:
       - key: VITE_API_URL
-        value: ""   # Fill in: https://iotinel-gateway.onrender.com
+        value: ""
