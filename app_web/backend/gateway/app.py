@@ -62,11 +62,17 @@ async def _proxy(service_name: str, path: str, request: Request) -> Response:
             },
             status_code=504,
         )
-    body: Any
     content_type = response.headers.get("content-type", "")
     if "application/json" in content_type:
-        body = response.json()
-        proxy_response = JSONResponse(content=body, status_code=response.status_code)
+        try:
+            body = response.json()
+            proxy_response = JSONResponse(content=body, status_code=response.status_code)
+        except Exception:
+            proxy_response = Response(
+                content=response.content,
+                status_code=response.status_code,
+                media_type=content_type,
+            )
     else:
         proxy_response = Response(
             content=response.content,
