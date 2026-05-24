@@ -133,12 +133,15 @@ async def retrain(
     background_tasks: BackgroundTasks,
     _: User = Depends(require_roles("data_scientist", "administrator")),
 ):
-    signal = await should_retrain("URLLC")
-    if not signal.get("should_retrain"):
-        return {
-            "status": "skipped",
-            "reason": signal.get("reason", "No dataset exceeded the drift threshold"),
-        }
+    try:
+        signal = await should_retrain("URLLC")
+        if not signal.get("should_retrain"):
+            return {
+                "status": "skipped",
+                "reason": signal.get("reason", "No dataset exceeded the drift threshold"),
+            }
+    except Exception:
+        return {"status": "skipped", "reason": "MLOPS service unavailable"}
 
     state = _snapshot_retrain_state()
     if state["status"] in {"queued", "running"}:
@@ -167,7 +170,11 @@ async def monitor_health(
         require_roles("security_analyst", "data_scientist", "administrator")
     )
 ):
-    return {"status": "UP", "elk": await elk_status(), "viewer_role": user.role}
+    try:
+        elk = await elk_status()
+    except Exception:
+        elk = {"status": "unavailable"}
+    return {"status": "UP", "elk": elk, "viewer_role": user.role}
 
 
 @app.post("/monitor/alert")
