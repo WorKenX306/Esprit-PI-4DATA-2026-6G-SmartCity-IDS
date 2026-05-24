@@ -150,12 +150,13 @@ function parseHyperparameterValue(field: HyperparameterField, value: Hyperparame
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const token = window.localStorage.getItem('iotinel_access_token');
   const authHeader: Record<string, string> = token ? { 'Authorization': `Bearer ${token}` } : {};
-  const { headers: initHeaders, ...restInit } = init ?? {};
-  const contentType = restInit.body instanceof FormData ? {} : { 'Content-Type': 'application/json' };
+  const { headers: initHeaders, body, ...restInit } = init ?? {};
+  const contentHeader: Record<string, string> = body instanceof FormData ? {} : { 'Content-Type': 'application/json' };
   const response = await fetch(`${API_BASE}${path}`, {
     credentials: 'include',
+    body,
     ...restInit,
-    headers: { ...contentType, ...authHeader, ...(initHeaders as Record<string, string> ?? {}) },
+    headers: { ...contentHeader, ...authHeader, ...(initHeaders as Record<string, string> ?? {}) },
   });
   if (!response.ok) {
     const payload = await response.json().catch(() => ({}));
