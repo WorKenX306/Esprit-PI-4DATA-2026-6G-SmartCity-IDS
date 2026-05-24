@@ -80,7 +80,8 @@ const QUICK_ACCOUNTS = [
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') || 'http://localhost:8010';
 const GATEWAY_LOGIN_URL = `${API_BASE}/login`;
 const STORAGE_KEY = 'iotinel_user_session';
-const TOKEN_KEY = 'iotinel_access_token';
+const IS_GATEWAY = window.location.port === '8010';
+const APP_PREFIX = IS_GATEWAY ? '/analyst' : '';
 const LOGIN_PATH = '/login';
 const HOME_PATH = `${APP_PREFIX}${ROLE_CONFIG.homePath}`;
 const FINAL_THRESHOLD = 0.3;
