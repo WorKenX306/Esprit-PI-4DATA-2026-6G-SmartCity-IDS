@@ -148,9 +148,11 @@ function parseHyperparameterValue(field: HyperparameterField, value: Hyperparame
 }
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
+  const token = window.localStorage.getItem('iotinel_access_token');
+  const authHeader: Record<string, string> = token ? { 'Authorization': `Bearer ${token}` } : {};
   const response = await fetch(`${API_BASE}${path}`, {
     credentials: 'include',
-    headers: init?.body instanceof FormData ? undefined : { 'Content-Type': 'application/json' },
+    headers: { ...authHeader, ...(init?.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }), ...(init?.headers as Record<string, string> ?? {}) },
     ...init,
   });
   if (!response.ok) {
@@ -176,12 +178,14 @@ function readStoredUser(): AuthUser | null {
   }
 }
 
-function writeStoredUser(user: AuthUser | null): void {
+function writeStoredUser(user: AuthUser | null, token?: string): void {
   if (!user) {
     window.localStorage.removeItem(STORAGE_KEY);
+    window.localStorage.removeItem('iotinel_access_token');
     return;
   }
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
+  if (token) window.localStorage.setItem('iotinel_access_token', token);
 }
 
 function routeFor(path: string): string {
@@ -913,7 +917,7 @@ export default function App() {
         method: 'POST',
         body: JSON.stringify({ email, password }),
       });
-      writeStoredUser(payload.user);
+      writeStoredUser(payload.user, payload.access_token);
       setUser(payload.user);
       if (payload.user.role !== ROLE_CONFIG.role) {
         window.location.href = redirectForRole(payload.user.role);

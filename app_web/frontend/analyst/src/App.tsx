@@ -80,16 +80,18 @@ const QUICK_ACCOUNTS = [
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') || 'http://localhost:8010';
 const GATEWAY_LOGIN_URL = `${API_BASE}/login`;
 const STORAGE_KEY = 'iotinel_user_session';
-const IS_GATEWAY = window.location.port === '8010';
-const APP_PREFIX = IS_GATEWAY ? '/analyst' : '';
+const TOKEN_KEY = 'iotinel_access_token';
 const LOGIN_PATH = '/login';
 const HOME_PATH = `${APP_PREFIX}${ROLE_CONFIG.homePath}`;
 const FINAL_THRESHOLD = 0.3;
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
+  const token = window.localStorage.getItem('iotinel_access_token');
+  const authHeader: Record<string, string> = token ? { 'Authorization': `Bearer ${token}` } : {};
   const response = await fetch(`${API_BASE}${path}`, {
     credentials: 'include',
     ...init,
+    headers: { ...authHeader, ...(init?.headers as Record<string, string> ?? {}) },
   });
   if (!response.ok) {
     const payload = await response.json().catch(() => ({}));
@@ -125,12 +127,14 @@ function readStoredUser(): AuthUser | null {
   }
 }
 
-function writeStoredUser(user: AuthUser | null): void {
+function writeStoredUser(user: AuthUser | null, token?: string): void {
   if (!user) {
     window.localStorage.removeItem(STORAGE_KEY);
+    window.localStorage.removeItem('iotinel_access_token');
     return;
   }
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
+  if (token) window.localStorage.setItem('iotinel_access_token', token);
 }
 
 function routeFor(path: string): string {
@@ -891,7 +895,7 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
-      writeStoredUser(payload.user);
+      writeStoredUser(payload.user, payload.access_token);
       setUser(payload.user);
       if (payload.user.role !== ROLE_CONFIG.role) {
         window.location.href = redirectForRole(payload.user.role);

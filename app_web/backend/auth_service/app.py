@@ -133,7 +133,7 @@ async def login(request: Request, response: Response, db: Session = Depends(get_
     db.commit()
     token = create_access_token(user)
     response.set_cookie(
-        TOKEN_COOKIE_NAME, token, httponly=True, samesite="lax", secure=False
+        TOKEN_COOKIE_NAME, token, httponly=True, samesite="none", secure=True
     )
     emit_nowait(
         "6g-ids-auth",
