@@ -46,7 +46,7 @@ type StatTileProps = {
 };
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') || 'http://localhost:8010';
-const GATEWAY_LOGIN_URL = `${API_BASE}/login`;
+const GATEWAY_LOGIN_URL = `${window.location.origin}/login`;
 const STORAGE_KEY = 'iotinel_user_session';
 const IS_GATEWAY = window.location.port === '8010';
 const APP_PREFIX = IS_GATEWAY ? '/administrator' : '';
