@@ -6,9 +6,9 @@ export const ROLE_CONFIG = {
   accent: '#BA7517',
   homePath: '/dashboard',
   redirectMap: {
-    security_analyst: 'http://localhost:8010/analyst/dashboard',
-    data_scientist: 'http://localhost:8010/scientist/monitoring',
-    administrator: 'http://localhost:8010/administrator/dashboard',
+    security_analyst: 'https://iotinel-analyst-ui.onrender.com/dashboard',
+    data_scientist: 'https://iotinel-scientist-ui.onrender.com/monitoring',
+    administrator: 'https://iotinel-admin-ui.onrender.com/dashboard',
   },
   menu: [
     { path: '/dashboard', label: 'Dashboard' },
