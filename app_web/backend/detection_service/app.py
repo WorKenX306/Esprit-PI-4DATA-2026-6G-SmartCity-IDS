@@ -28,6 +28,13 @@ from app_web.backend.shared.security import require_roles, seed_default_users
 
 COHERE_API_KEY = os.getenv("COHERE_API_KEY", "").strip()
 
+ANALYST_FALLBACK_DATASETS = [
+    {"dataset": "eMBB", "features": ["Dur", "TotPkts", "TotBytes", "Rate", "Load", "Loss", "pLoss", "TcpRtt"]},
+    {"dataset": "mMTC", "features": ["TotPkts", "Rate", "SrcGap", "DstGap", "Dur", "Load", "Loss", "TcpRtt"]},
+    {"dataset": "URLLC", "features": ["TcpRtt", "SynAck", "AckDat", "Loss", "Dur", "Rate", "TotPkts", "TotBytes"]},
+    {"dataset": "TON_IoT", "features": ["src_bytes", "dst_bytes", "src_pkts", "dst_pkts", "duration", "proto", "conn_state", "service"]},
+]
+
 
 class DetectAIExplanationRequest(BaseModel):
     dataset: str
@@ -134,7 +141,13 @@ async def datasets(
     )
 ):
     del user
-    features = await dataset_feature_map()
+    try:
+        features = await dataset_feature_map()
+    except Exception:
+        features = {
+            d["dataset"]: d["features"]
+            for d in ANALYST_FALLBACK_DATASETS
+        }
     return [{"dataset": name, "features": items} for name, items in features.items()]
 
 
@@ -147,7 +160,18 @@ async def detect_predict(
     ),
 ):
     started = time.perf_counter()
-    result = await predict(payload.dataset, payload.features)
+    try:
+        result = await predict(payload.dataset, payload.features)
+    except Exception:
+        return {
+            "dataset": payload.dataset,
+            "prediction": "unavailable",
+            "confidence": 0.0,
+            "attack_type": "MLOPS service unavailable",
+            "severity": "unknown",
+            "shap_explanation": [],
+            "rolling_accuracy_pct": None,
+        }
     latency_ms = round((time.perf_counter() - started) * 1000, 2)
     db.add(
         PredictionRecord(
@@ -189,7 +213,10 @@ async def detect_explain(
     ),
 ):
     del user
-    return await explain(payload.dataset, payload.features)
+    try:
+        return await explain(payload.dataset, payload.features)
+    except Exception:
+        return {"explanation": "MLOPS service unavailable", "shap_values": []}
 
 
 @app.post("/detect/ai-explanation")

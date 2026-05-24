@@ -14,7 +14,52 @@ from app_web.backend.shared.mlops_bridge import (
 )
 from app_web.backend.shared.models import User
 from app_web.backend.shared.security import require_roles, seed_default_users
-from app_web.backend.shared.store import MODEL_COMPARISON, recent_alerts
+from app_web.backend.shared.store import (
+    MODEL_COMPARISON,
+    attack_distribution,
+    recent_alerts,
+    timeline_points,
+)
+
+# ---------------------------------------------------------------------------
+# Fallback data used when the MLOPS API is unreachable (e.g. Render free tier)
+# ---------------------------------------------------------------------------
+_FALLBACK_SUMMARY = {
+    "total_predictions": 0,
+    "attacks_detected": 0,
+    "accuracy": 0.0,
+    "datasets_active": 4,
+    "summary": [],
+}
+_FALLBACK_RECENT: list = []
+
+
+async def _safe_summary_stats() -> dict:
+    try:
+        return await summary_stats()
+    except Exception:
+        return _FALLBACK_SUMMARY
+
+
+async def _safe_recent_stats() -> list:
+    try:
+        return await recent_stats()
+    except Exception:
+        return _FALLBACK_RECENT
+
+
+async def _safe_attack_stats() -> list:
+    try:
+        return await attack_stats()
+    except Exception:
+        return attack_distribution()
+
+
+async def _safe_metrics_over_time() -> dict:
+    try:
+        return await metrics_over_time()
+    except Exception:
+        return {"timeline": timeline_points()}
 
 app = FastAPI(title="IOTinel Dashboard Service", version="1.0.0")
 app.add_middleware(
@@ -45,10 +90,10 @@ async def overview(
         require_roles("security_analyst", "data_scientist", "administrator")
     ),
 ):
-    summary = await summary_stats()
+    summary = await _safe_summary_stats()
     payload = {
         "summary": summary,
-        "recent": await recent_stats(),
+        "recent": await _safe_recent_stats(),
     }
     if user.role == "administrator":
         payload["admin_context"] = {"user_count": db.query(User).count()}
@@ -61,7 +106,7 @@ async def dashboard_summary(
         require_roles("security_analyst", "data_scientist", "administrator")
     )
 ):
-    return await summary_stats()
+    return await _safe_summary_stats()
 
 
 @app.get("/dashboard/attacks")
@@ -70,7 +115,7 @@ async def attacks(
         require_roles("security_analyst", "data_scientist", "administrator")
     )
 ):
-    return await attack_stats()
+    return await _safe_attack_stats()
 
 
 @app.get("/dashboard/timeline")
@@ -79,7 +124,7 @@ async def timeline(
         require_roles("security_analyst", "data_scientist", "administrator")
     )
 ):
-    return await metrics_over_time()
+    return await _safe_metrics_over_time()
 
 
 @app.get("/dashboard/recent")
@@ -88,7 +133,7 @@ async def dashboard_recent(
         require_roles("security_analyst", "data_scientist", "administrator")
     )
 ):
-    return await recent_stats()
+    return await _safe_recent_stats()
 
 
 @app.get("/dashboard/model-comparison")
@@ -113,7 +158,7 @@ def alerts(
 async def timeline_ws(websocket: WebSocket):
     await websocket.accept()
     try:
-        await websocket.send_json(await metrics_over_time())
+        await websocket.send_json(await _safe_metrics_over_time())
     except WebSocketDisconnect:
         return
     finally:

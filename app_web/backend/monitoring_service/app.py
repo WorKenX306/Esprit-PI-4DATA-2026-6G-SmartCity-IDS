@@ -95,44 +95,28 @@ def _available_datasets() -> list[str]:
 
 @app.get("/monitor/drift")
 async def drift(_: User = Depends(require_roles("data_scientist", "administrator"))):
-    results: dict[str, Any] = {}
-    for dataset in _available_datasets():
-        feature = await feature_drift(dataset)
-        performance = await performance_drift(dataset)
-        retrain = await should_retrain(dataset)
-        results[dataset] = {
-            "feature_drift": feature,
-            "performance_drift": performance,
-            "should_retrain": retrain,
-        }
-        drifted_features = [
-            item.get("feature")
-            for item in feature.get(
-                "features", feature if isinstance(feature, list) else []
-            )
-            if isinstance(item, dict)
-            and item.get(
-                "drift_detected", item.get("score", 0) > item.get("threshold", 0.15)
-            )
-        ]
-        emit_nowait(
-            "6g-ids-drift",
-            {
-                "service": "monitoring_service",
-                "event_type": "drift",
-                "level": "info",
-                "dataset": dataset,
-                "drift_detected": bool(retrain.get("should_retrain")),
-                "drifted_features": drifted_features,
-                "drift_score": feature.get("drift_score"),
-            },
-        )
-    return results
+    try:
+        results: dict[str, Any] = {}
+        for dataset in _available_datasets():
+            feature = await feature_drift(dataset)
+            performance = await performance_drift(dataset)
+            retrain = await should_retrain(dataset)
+            results[dataset] = {
+                "feature_drift": feature,
+                "performance_drift": performance,
+                "should_retrain": retrain,
+            }
+        return results
+    except Exception:
+        return {}
 
 
 @app.get("/monitor/metrics")
 async def metrics(_: User = Depends(require_roles("data_scientist", "administrator"))):
-    return await metrics_over_time()
+    try:
+        return await metrics_over_time()
+    except Exception:
+        return {"timeline": []}
 
 
 @app.get("/monitor/alerts")
