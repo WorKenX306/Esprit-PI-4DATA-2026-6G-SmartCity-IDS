@@ -88,10 +88,11 @@ const FINAL_THRESHOLD = 0.3;
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const token = window.localStorage.getItem('iotinel_access_token');
   const authHeader: Record<string, string> = token ? { 'Authorization': `Bearer ${token}` } : {};
+  const { headers: initHeaders, ...restInit } = init ?? {};
   const response = await fetch(`${API_BASE}${path}`, {
     credentials: 'include',
-    ...init,
-    headers: { ...authHeader, ...(init?.headers as Record<string, string> ?? {}) },
+    ...restInit,
+    headers: { ...authHeader, ...(initHeaders as Record<string, string> ?? {}) },
   });
   if (!response.ok) {
     const payload = await response.json().catch(() => ({}));

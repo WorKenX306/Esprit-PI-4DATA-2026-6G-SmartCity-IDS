@@ -56,10 +56,11 @@ const HOME_PATH = `${APP_PREFIX}${ROLE_CONFIG.homePath}`;
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const token = window.localStorage.getItem('iotinel_access_token');
   const authHeader: Record<string, string> = token ? { 'Authorization': `Bearer ${token}` } : {};
+  const { headers: initHeaders, ...restInit } = init ?? {};
   const response = await fetch(`${API_BASE}${path}`, {
     credentials: 'include',
-    headers: { 'Content-Type': 'application/json', ...authHeader, ...(init?.headers as Record<string, string> ?? {}) },
-    ...init,
+    ...restInit,
+    headers: { 'Content-Type': 'application/json', ...authHeader, ...(initHeaders as Record<string, string> ?? {}) },
   });
   if (!response.ok) {
     const payload = await response.json().catch(() => ({}));
